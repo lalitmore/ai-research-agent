@@ -1,0 +1,13 @@
+.env
+*.json
+!package.json
+!package-lock.json
+__pycache__/
+*.pyc
+.venv/
+venv/
+node_modules/
+static/
+dist/
+.DS_Store
+service-account-key.json

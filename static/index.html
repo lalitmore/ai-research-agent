@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intel — AI Research Agent</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+:root {
+  --ink: #0f0e0d;
+  --paper: #f5f0e8;
+  --cream: #ede8dc;
+  --accent: #c84b2f;
+  --accent2: #2a6b4f;
+  --muted: #8a8070;
+  --border: #d4cfc4;
+  --card: #faf7f2;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: 
+    repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(0,0,0,0.03) 28px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.page { position: relative; z-index: 1; max-width: 860px; margin: 0 auto; padding: 60px 24px 100px; }
+
+/* HEADER */
+header {
+  border-bottom: 2px solid var(--ink);
+  padding-bottom: 20px;
+  margin-bottom: 48px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.masthead {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(36px, 7vw, 64px);
+  letter-spacing: -1px;
+  line-height: 1;
+}
+
+.masthead em {
+  font-style: italic;
+  color: var(--accent);
+}
+
+.tagline {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* SEARCH */
+.search-section { margin-bottom: 48px; }
+
+.search-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 10px;
+}
+
+.search-row {
+  display: flex;
+  gap: 0;
+  border: 2px solid var(--ink);
+  background: white;
+  overflow: hidden;
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 16px 20px;
+  font-family: 'DM Serif Display', serif;
+  font-size: 22px;
+  background: transparent;
+  color: var(--ink);
+}
+
+.search-input::placeholder { color: var(--border); }
+
+.search-btn {
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  padding: 16px 28px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.search-btn:hover { background: var(--accent); }
+.search-btn:disabled { background: var(--muted); cursor: not-allowed; }
+
+/* LOADING */
+.loading {
+  text-align: center;
+  padding: 60px 0;
+  animation: fadeIn 0.3s ease;
+}
+
+.loading-head {
+  font-family: 'DM Serif Display', serif;
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+
+.loading-sub {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 2px;
+}
+
+.dots::after {
+  content: '';
+  animation: dots 1.5s infinite;
+}
+@keyframes dots {
+  0%   { content: '.'; }
+  33%  { content: '..'; }
+  66%  { content: '...'; }
+}
+
+/* BRIEF */
+.brief { animation: fadeUp 0.4s ease; }
+
+.brief-header {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 20px;
+  margin-bottom: 32px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.brief-company {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(32px, 6vw, 52px);
+  line-height: 1;
+}
+
+.brief-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.run-id {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 1px;
+}
+
+.sentiment-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border: 1px solid currentColor;
+}
+.sentiment-badge.positive { color: var(--accent2); }
+.sentiment-badge.negative { color: var(--accent); }
+.sentiment-badge.neutral  { color: var(--muted); }
+
+/* SECTIONS */
+.section { margin-bottom: 36px; }
+
+.section-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px;
+  margin-bottom: 16px;
+}
+
+.summary-text {
+  font-family: 'DM Serif Display', serif;
+  font-size: 19px;
+  line-height: 1.65;
+  color: var(--ink);
+}
+
+/* META GRID */
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  margin-bottom: 36px;
+}
+
+.meta-cell {
+  background: var(--card);
+  padding: 14px 16px;
+}
+
+.meta-key {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.meta-val {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* TWO COL */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 36px; }
+
+@media (max-width: 580px) { .two-col { grid-template-columns: 1fr; } }
+
+/* TAGS */
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  background: var(--cream);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  color: var(--ink);
+}
+
+/* NEWS */
+.news-list { display: flex; flex-direction: column; gap: 0; }
+
+.news-item {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.news-date {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  white-space: nowrap;
+  padding-top: 2px;
+}
+
+.news-headline { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.news-sig { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+/* INTERVIEW TIP */
+.tip-box {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 28px 32px;
+  margin-bottom: 36px;
+  position: relative;
+  overflow: hidden;
+}
+
+.tip-box::before {
+  content: '"';
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: 'DM Serif Display', serif;
+  font-size: 120px;
+  color: rgba(255,255,255,0.06);
+  line-height: 1;
+  pointer-events: none;
+}
+
+.tip-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(245,240,232,0.5);
+  margin-bottom: 12px;
+}
+
+.tip-text {
+  font-family: 'DM Serif Display', serif;
+  font-size: 17px;
+  line-height: 1.6;
+  font-style: italic;
+}
+
+/* STRENGTHS / RISKS */
+.sr-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+
+.sr-list li {
+  font-size: 13px;
+  line-height: 1.5;
+  padding-left: 16px;
+  position: relative;
+}
+
+.sr-list.strengths li::before { content: '+'; position: absolute; left: 0; color: var(--accent2); font-weight: 700; }
+.sr-list.risks li::before    { content: '−'; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+
+/* ERROR */
+.error-box {
+  border: 2px solid var(--accent);
+  padding: 20px 24px;
+  background: rgba(200,75,47,0.05);
+}
+.error-box p { font-size: 14px; color: var(--accent); font-family: 'DM Mono', monospace; }
+
+/* HISTORY */
+.history-section { margin-top: 64px; border-top: 2px solid var(--ink); padding-top: 24px; }
+.history-title { font-family: 'DM Serif Display', serif; font-size: 22px; margin-bottom: 20px; }
+.history-list { display: flex; flex-direction: column; gap: 0; }
+.history-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0; border-bottom: 1px solid var(--border);
+  cursor: pointer; transition: opacity 0.15s;
+  gap: 12px; flex-wrap: wrap;
+}
+.history-item:hover { opacity: 0.6; }
+.history-company { font-weight: 600; font-size: 14px; }
+.history-meta { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); }
+
+/* ANIMATIONS */
+@keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeUp  { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="masthead"><em>Intel</em></div>
+    <div class="tagline">AI Competitive Research Agent · GCP</div>
+  </header>
+
+  <div class="search-section">
+    <span class="search-label">Research a Company</span>
+    <div class="search-row">
+      <input class="search-input" id="companyInput" type="text" placeholder="e.g. Stripe, Palantir, Databricks..." />
+      <button class="search-btn" id="searchBtn" onclick="runResearch()">Research →</button>
+    </div>
+  </div>
+
+  <div id="output"></div>
+
+  <div class="history-section" id="historySection" style="display:none">
+    <div class="history-title">Recent Research</div>
+    <div class="history-list" id="historyList"></div>
+  </div>
+
+</div>
+
+<script>
+  const API = '';  // same origin — Cloud Run serves both
+
+  document.getElementById('companyInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') runResearch();
+  });
+
+  async function runResearch() {
+    const company = document.getElementById('companyInput').value.trim();
+    if (!company) return;
+
+    const btn = document.getElementById('searchBtn');
+    btn.disabled = true;
+    btn.textContent = 'Researching...';
+
+    document.getElementById('output').innerHTML = `
+      <div class="loading">
+        <div class="loading-head">Researching ${company}<span class="dots"></span></div>
+        <div class="loading-sub">Searching the web · Analyzing · Structuring</div>
+      </div>`;
+
+    try {
+      const res = await fetch(`${API}/research`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company })
+      });
+
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
+      const data = await res.json();
+      renderBrief(data);
+      loadHistory();
+    } catch (err) {
+      document.getElementById('output').innerHTML = `
+        <div class="error-box"><p>Error: ${err.message}. Check the API is running.</p></div>`;
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Research →';
+  }
+
+  function renderBrief(data) {
+    const b = data.brief;
+    const ts = new Date(data.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+    const tags = arr => (arr||[]).map(t => `<span class="tag">${t}</span>`).join('');
+    const listItems = (arr, cls) => (arr||[]).map(i => `<li>${i}</li>`).join('');
+
+    const news = (b.recent_news||[]).map(n => `
+      <div class="news-item">
+        <div class="news-date">${n.date||''}</div>
+        <div>
+          <div class="news-headline">${n.headline||''}</div>
+          <div class="news-sig">${n.significance||''}</div>
+        </div>
+      </div>`).join('');
+
+    document.getElementById('output').innerHTML = `
+      <div class="brief">
+        <div class="brief-header">
+          <div class="brief-company">${data.company}</div>
+          <div class="brief-meta">
+            <span class="run-id">RUN #${data.run_id} · ${ts}</span>
+            <span class="sentiment-badge ${b.sentiment||'neutral'}">${(b.sentiment||'neutral').toUpperCase()}</span>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Overview</div>
+          <div class="summary-text">${b.summary||''}</div>
+        </div>
+
+        <div class="meta-grid">
+          <div class="meta-cell"><div class="meta-key">Founded</div><div class="meta-val">${b.founded||'—'}</div></div>
+          <div class="meta-cell"><div class="meta-key">HQ</div><div class="meta-val">${b.headquarters||'—'}</div></div>
+          <div class="meta-cell"><div class="meta-key">Industry</div><div class="meta-val">${b.industry||'—'}</div></div>
+          <div class="meta-cell"><div class="meta-key">Business Model</div><div class="meta-val">${b.business_model||'—'}</div></div>
+        </div>
+
+        <div class="two-col">
+          <div class="section">
+            <div class="section-title">Key Products</div>
+            <div class="tags">${tags(b.key_products)}</div>
+          </div>
+          <div class="section">
+            <div class="section-title">Key Topics</div>
+            <div class="tags">${tags(b.key_topics)}</div>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="section">
+            <div class="section-title">Competitors</div>
+            <div class="tags">${tags(b.competitors)}</div>
+          </div>
+          <div class="section" style="display:flex;gap:24px;flex-direction:column;">
+            <div>
+              <div class="section-title">Strengths</div>
+              <ul class="sr-list strengths">${listItems(b.strengths)}</ul>
+            </div>
+            <div>
+              <div class="section-title">Risks</div>
+              <ul class="sr-list risks">${listItems(b.risks)}</ul>
+            </div>
+          </div>
+        </div>
+
+        ${news ? `<div class="section"><div class="section-title">Recent News</div><div class="news-list">${news}</div></div>` : ''}
+
+        ${b.interview_tip ? `
+        <div class="tip-box">
+          <div class="tip-label">Interview Tip</div>
+          <div class="tip-text">${b.interview_tip}</div>
+        </div>` : ''}
+
+        <div style="text-align:center; padding: 8px 0;">
+          <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);">
+            Artifact saved · ${data.artifact_url}
+          </span>
+        </div>
+      </div>`;
+  }
+
+  async function loadHistory() {
+    try {
+      const res = await fetch(`${API}/history?limit=5`);
+      const data = await res.json();
+      const runs = data.runs || [];
+      if (!runs.length) return;
+
+      document.getElementById('historySection').style.display = 'block';
+      document.getElementById('historyList').innerHTML = runs.map(r => `
+        <div class="history-item" onclick="document.getElementById('companyInput').value='${r.company}';runResearch()">
+          <span class="history-company">${r.company}</span>
+          <span class="history-meta">${r.sentiment?.toUpperCase() || ''} · ${new Date(r.timestamp).toLocaleDateString()}</span>
+        </div>`).join('');
+    } catch(e) {}
+  }
+
+  // Load history on page load
+  loadHistory();
+</script>
+</body>
+</html>

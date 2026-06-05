@@ -38,13 +38,14 @@ def health():
     return {"status": "ok"}
 
 
-@app.post("/research", response_model=ResearchResponse)
-async def research(req: ResearchRequest):
+
+@app.post("/research", response_model=ResearchResponse) # Pydantic validates the response matches the schema. If response doesn't match, return 500 error. 
+async def research(req: ResearchRequest):   # the endpoint is async so it doesn't block while waiting for the AI agent. FastAPI can handle other requests while this one is running
     if not req.company.strip():
         raise HTTPException(status_code=400, detail="Company name required")
 
-    run_id = str(uuid.uuid4())[:8]
-    timestamp = datetime.now(timezone.utc).isoformat()
+    run_id = str(uuid.uuid4())[:8] # Short unique ID for this run. Collision unlikely at this scale. 
+    timestamp = datetime.now(timezone.utc).isoformat() # ISO format with timezone for easier querying and display.
 
     # 1. Run the AI agent
     brief = await run_research_agent(req.company)
@@ -82,5 +83,9 @@ def history(limit: int = 20):
 
 
 # Serve React frontend (after `npm run build` output is in ./static)
-if os.path.exists("static"):
+# In production, it's better to serve the frontend separately (e.g. via Cloud Run or Firebase Hosting)
+# and have it call the API, rather than serving static files from FastAPI. 
+# But this is simpler for a demo and local testing.
+# Cloud container serves frontend and API
+if os.path.exists("static"):    
     app.mount("/", StaticFiles(directory="static", html=True), name="static")

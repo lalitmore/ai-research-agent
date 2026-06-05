@@ -3,8 +3,13 @@ import json
 import re
 import anthropic
 
+# Use async client for better performance, since waiting for model to respond.
+# Nesscity because FastAPI endpoints are async, and using a sync client would block the event loop.
+
 client = anthropic.AsyncAnthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
+# System prompt sets models persona and behevior. 
+# Be explicit about response format to make parsing easier downstream.
 SYSTEM_PROMPT = """You are a competitive intelligence analyst. Given a company name,
 research it thoroughly and return a JSON object with this exact structure.
 
@@ -28,7 +33,12 @@ CRITICAL: Your response must start with { and end with }. Nothing before the ope
   "interview_tip": "One insight you would want to mention in a job interview at this company"
 }"""
 
+# Three layers of fallback:
+# 1. Try to parse the raw text directly as JSON
+# 2. Strip markdown code fences (```json ... ```) that the model sometimes adds, then try again
+# 3. Use regex to find anything that looks like a JSON object ({...}) and try to parse just that
 
+# Model might occasioanlly format diff output. 
 def extract_json(text: str) -> dict | None:
     """Robustly extract JSON from model output."""
     text = text.strip()
@@ -60,7 +70,9 @@ def extract_json(text: str) -> dict | None:
 
 async def run_research_agent(company: str) -> dict:
     """Run multi-step research agent with web search."""
-    
+    # tells model which tools to use.
+    # using anthropics built in web search tool.
+    # No need to write search code! :)
     tools = [{"type": "web_search_20250305", "name": "web_search"}]
 
     messages = [
@@ -69,6 +81,16 @@ async def run_research_agent(company: str) -> dict:
             "content": f"Research this company: {company}\n\nSearch for recent news, business model, products, competitors, and notable events. Then return ONLY the JSON object — start your response with {{ and end with }}.",
         }
     ]
+    # Agentic Loop:
+    # 1. Send the full message history to Claude
+    # 2. Claude returns a response with content blocks — these can be text blocks or tool_use blocks
+    # 3. If stop_reason == "end_turn" and no tool calls — the model is done, extract the JSON
+    # 4. If there are tool use blocks — the model wants to search. Append the assistant's response to history, append tool results as a user message, loop again
+    # 5. Repeat until the model stops using tools
+
+    # Append full history everytime because Anthropic API is stateless. No memory between calls. 
+    # Model finsihes naturally: stop_reason: "end_turn"
+    # Model calls tool: stop_reason: "tool_call"
 
     while True:
         response = await client.messages.create(
